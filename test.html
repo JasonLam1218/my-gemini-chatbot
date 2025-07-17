@@ -1,10 +1,69 @@
 <!DOCTYPE html>
 <html>
-  <head><title>Chatbot Test</title></head>
+  <head><title>Chatbot Test</title>
+    <style>
+      body {
+        background: #f4f6fb;
+        font-family: 'Segoe UI', Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        margin: 0;
+      }
+      #chat-container {
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+        padding: 32px 24px 24px 24px;
+        width: 400px;
+        max-width: 90vw;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      #msg {
+        width: 100%;
+        font-size: 1.2em;
+        padding: 12px;
+        border-radius: 8px;
+        border: 1px solid #d1d5db;
+        margin-bottom: 10px;
+        box-sizing: border-box;
+      }
+      button {
+        font-size: 1.1em;
+        padding: 10px 0;
+        border-radius: 8px;
+        border: none;
+        background: #6366f1;
+        color: #fff;
+        cursor: pointer;
+        transition: background 0.2s;
+        width: 100%;
+      }
+      button:hover {
+        background: #4f46e5;
+      }
+      #out {
+        min-height: 120px;
+        background: #f1f5f9;
+        border-radius: 8px;
+        padding: 16px;
+        font-size: 1.1em;
+        color: #222;
+        margin-top: 10px;
+        word-break: break-word;
+      }
+    </style>
+  </head>
   <body>
-    <input type="text" id="msg" placeholder="Type a message...">
-    <button onclick="send()">Send</button>
-    <div id="out"></div>
+    <div id="chat-container">
+      <input type="text" id="msg" placeholder="Type a message...">
+      <button onclick="send()">Send</button>
+      <div id="out"></div>
+    </div>
     <script>
       async function send() {
         const txt = document.getElementById('msg').value;
@@ -12,13 +71,18 @@
         const t0 = performance.now();
         const res = await fetch('/api/chatbot', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json'
+          },
           body: JSON.stringify({ message: txt })
         });
         const t1 = performance.now();
         const data = await res.json();
         document.getElementById('out').innerHTML =
-          "<b>Bot:</b> " + data.response + "<br><b>Delay:</b> " + ((t1 - t0) / 1000).toFixed(2) + " s";
+          `<b>Bot:</b> ${data.response}<br>` +
+          `<b>Region:</b> ${data.region}<br>` +
+          `<b>Backend Delay:</b> ${(data.backendDelay / 1000).toFixed(2)} s<br>` +
+          `<b>Total (Frontend) Delay:</b> ${((t1 - t0) / 1000).toFixed(2)} s`;
       }
     </script>
   </body>
