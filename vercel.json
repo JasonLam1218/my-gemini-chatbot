@@ -1,0 +1,10 @@
+{
+    "functions": {
+      "api/chatbot.js": {
+        "memory": 1024,
+        "maxDuration": 10
+      }
+    },
+    "regions": ["sfo1"]
+  }
+  
