@@ -28,7 +28,7 @@ export default async function handler(req, res) {
     const result = await model.generateContent(message);
     const response = await result.response;
     const botReply = response.text();
-    const backendDelay = Date.now() - start;
+    const backendDelay = Date.now() - start; 
     const region = process.env.VERCEL_REGION || 'unknown';
 
     return res.status(200).json({

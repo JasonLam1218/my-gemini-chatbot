@@ -81,8 +81,8 @@
         document.getElementById('out').innerHTML =
           `<b>Bot:</b> ${data.response}<br>` +
           `<b>Region:</b> ${data.region}<br>` +
-          `<b>Backend Delay:</b> ${(data.backendDelay / 1000).toFixed(2)} s<br>` +
-          `<b>Total (Frontend) Delay:</b> ${((t1 - t0) / 1000).toFixed(2)} s`;
+          // `<b>Backend Delay:</b> ${(data.backendDelay / 1000).toFixed(2)} s<br>` +
+          `<b>Total Delay (browser -> Vercel -> Gemini -> Vercel ->browser):</b> ${((t1 - t0) / 1000).toFixed(2)} s`;
       }
     </script>
   </body>
