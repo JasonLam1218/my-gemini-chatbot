@@ -60,6 +60,7 @@ async function send() {
   try {
     // Use relative URL since frontend and API are on the same domain
     const apiUrl = '/api/chatbot';
+    const start = Date.now(); // Record time before sending
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -70,6 +71,7 @@ async function send() {
       }),
       mode: 'cors'
     });
+    const end = Date.now(); // Record time after receiving
     // Remove loading indicator
     const loadingElement = document.getElementById('loading');
     if (loadingElement) {
@@ -82,6 +84,13 @@ async function send() {
     const data = await response.json();
     if (data.success) {
       addMessageToDisplay('assistant', data.response);
+      // Display round-trip delay and region
+      const roundTripDelay = end - start;
+      const delayDiv = document.createElement('div');
+      delayDiv.id = 'response-delay';
+      delayDiv.textContent = `Total round-trip time: ${roundTripDelay} ms (Backend: ${data.backendDelay} ms) | Region: ${data.region}`;
+      document.getElementById('out').appendChild(delayDiv);
+      document.getElementById('out').scrollTop = document.getElementById('out').scrollHeight;
     } else {
       addMessageToDisplay('assistant', 'Error: ' + (data.error || 'Unknown error'));
     }
