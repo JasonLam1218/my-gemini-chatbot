@@ -91,4 +91,7 @@ export default async function handler(req, res) {
       error: 'Failed to generate response: ' + error.message // Provide error details
     });
   }
+
+  res.status(500).json({ success: false, error: 'An unexpected error occurred' });
+
 }
