@@ -1,73 +1,25 @@
+<!--
+SUMMARY:
+This is the frontend for a persistent-memory chatbot using Google Gemini AI and Vercel KV for storage.
+- Generates and stores a unique userId and sessionId in localStorage for persistent identity and session memory.
+- Loads previous conversation history from the backend on page load and displays it as chat bubbles.
+- Sends user messages to the backend, receives AI responses, and updates the UI in real time.
+- Allows clearing the conversation, which deletes the session's memory from the backend.
+- All chat history is stored in Vercel KV and is used as context for the AI model.
+-->
 <!DOCTYPE html>
 <html>
   <head><title>Chatbot Test</title>
     <link rel="icon" href="data:,"> <!-- Prevent favicon 404 -->
-    <style>
-      body {
-        background: #f4f6fb;
-        font-family: 'Segoe UI', Arial, sans-serif;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 100vh;
-        margin: 0;
-      }
-      #chat-container {
-        background: #fff;
-        border-radius: 16px;
-        box-shadow: 0 4px 24px rgba(0,0,0,0.08);
-        padding: 32px 24px 24px 24px;
-        width: 1000px;
-        max-width: 100vw;
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-      }
-      #msg {
-        width: 100%;
-        font-size: 1.2em;
-        padding: 12px;
-        border-radius: 8px;
-        border: 1px solid #d1d5db;
-        margin-bottom: 10px;
-        box-sizing: border-box;
-      }
-      button {
-        font-size: 1.1em;
-        padding: 10px 0;
-        border-radius: 8px;
-        border: none;
-        background: #6366f1;
-        color: #fff;
-        cursor: pointer;
-        transition: background 0.2s;
-        width: 100%;
-      }
-      button:hover {
-        background: #4f46e5;
-      }
-      #clear-button:hover {
-        background: #dc2626 !important;
-      }
-      #out {
-        min-height: 300px;
-        max-height: 500px;
-        background: #f1f5f9;
-        border-radius: 8px;
-        padding: 16px;
-        font-size: 1.1em;
-        color: #222;
-        margin-top: 10px;
-        word-break: break-word;
-        overflow-y: auto;
-        display: flex;
-        flex-direction: column;
-      }
-    </style>
+    <link rel="stylesheet" href="style.css">
   </head>
   <body>
     <div id="chat-container">
+      <!--
+        Input area: text input, send button, clear button
+        - Send triggers message send
+        - Clear deletes conversation memory
+      -->
       <div style="display: flex; gap: 10px; margin-bottom: 10px;">
         <input type="text" id="message-input" placeholder="Type a message..." style="flex: 1;">
         <button id="send-button">Send</button>
@@ -75,187 +27,6 @@
       </div>
       <div id="out"></div>
     </div>
-    <script>
-      // Generate a persistent user ID (stored in localStorage)
-      let userId = localStorage.getItem('chatbot_user_id');
-      if (!userId) {
-        userId = 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-        localStorage.setItem('chatbot_user_id', userId);
-      }
-      
-      // Generate a persistent session ID for this chat session
-      let sessionId = localStorage.getItem('chatbot_session_id');
-      if (!sessionId) {
-        sessionId = 'session-' + Date.now();
-        localStorage.setItem('chatbot_session_id', sessionId);
-      }
-      
-      let conversationHistory = [];
-      
-      // Function to add message to conversation display
-      function addMessageToDisplay(role, message) {
-        const messageDiv = document.createElement('div');
-        messageDiv.style.marginBottom = '10px';
-        messageDiv.style.padding = '8px 12px';
-        messageDiv.style.borderRadius = '8px';
-        messageDiv.style.maxWidth = '80%';
-        messageDiv.style.wordWrap = 'break-word';
-        
-        if (role === 'user') {
-          messageDiv.style.backgroundColor = '#6366f1';
-          messageDiv.style.color = 'white';
-          messageDiv.style.marginLeft = 'auto';
-          messageDiv.style.textAlign = 'right';
-        } else {
-          messageDiv.style.backgroundColor = '#f1f5f9';
-          messageDiv.style.color = '#222';
-          messageDiv.style.border = '1px solid #d1d5db';
-        }
-        
-        messageDiv.textContent = message;
-        document.getElementById('out').appendChild(messageDiv);
-        document.getElementById('out').scrollTop = document.getElementById('out').scrollHeight;
-      }
-      
-      // Define the send function for the button's onclick (for compatibility)
-      async function send() {
-        const message = document.getElementById('message-input').value;
-        if (!message.trim()) {
-          return;
-        }
-        
-        // Add user message to display
-        addMessageToDisplay('user', message);
-        
-        // Clear input
-        document.getElementById('message-input').value = '';
-        
-        // Show loading state
-        const loadingDiv = document.createElement('div');
-        loadingDiv.id = 'loading';
-        loadingDiv.textContent = 'AI is thinking...';
-        loadingDiv.style.color = '#666';
-        loadingDiv.style.fontStyle = 'italic';
-        document.getElementById('out').appendChild(loadingDiv);
-        document.getElementById('out').scrollTop = document.getElementById('out').scrollHeight;
-        
-        try {
-          // Use relative URL since frontend and API are on the same domain
-          const apiUrl = '/api/chatbot';
-          
-          const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              message, 
-              sessionId: sessionId,
-              userId: userId || 'default'
-            }),
-            mode: 'cors'
-          });
-          
-          // Remove loading indicator
-          const loadingElement = document.getElementById('loading');
-          if (loadingElement) {
-            loadingElement.remove();
-          }
-          
-          if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`HTTP ${response.status}: ${errorText}`);
-          }
-          
-          const data = await response.json();
-          
-          if (data.success) {
-            addMessageToDisplay('assistant', data.response);
-          } else {
-            addMessageToDisplay('assistant', 'Error: ' + (data.error || 'Unknown error'));
-          }
-        } catch (error) {
-          // Remove loading indicator
-          const loadingElement = document.getElementById('loading');
-          if (loadingElement) {
-            loadingElement.remove();
-          }
-          
-          addMessageToDisplay('assistant', 'Error: ' + error.message);
-          console.error('Fetch error:', error);
-        }
-      }
-      
-      // Add event listener for the button
-      document.getElementById('send-button').addEventListener('click', send);
-      
-      // Allow pressing Enter to send
-      document.getElementById('message-input').addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-          send();
-        }
-      });
-      
-      // Function to load conversation history
-      async function loadConversationHistory() {
-        try {
-          const response = await fetch(`/api/chatbot?sessionId=${sessionId}&userId=${userId}`, {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-            mode: 'cors'
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            if (data.success && data.history && data.history.length > 0) {
-              // Clear current display
-              document.getElementById('out').innerHTML = '';
-              
-              // Display conversation history
-              data.history.forEach(msg => {
-                if (msg.role === 'user') {
-                  addMessageToDisplay('user', msg.parts[0].text);
-                } else if (msg.role === 'model') {
-                  addMessageToDisplay('assistant', msg.parts[0].text);
-                }
-              });
-              
-              addMessageToDisplay('assistant', 'Welcome back! I remember our previous conversation. How can I help you today?');
-            } else {
-              addMessageToDisplay('assistant', 'Hello! I\'m your AI assistant. How can I help you today?');
-            }
-          } else {
-            addMessageToDisplay('assistant', 'Hello! I\'m your AI assistant. How can I help you today?');
-          }
-        } catch (error) {
-          console.error('Error loading history:', error);
-          addMessageToDisplay('assistant', 'Hello! I\'m your AI assistant. How can I help you today?');
-        }
-      }
-      
-      // Function to clear conversation
-      async function clearConversation() {
-        try {
-          const response = await fetch(`/api/chatbot?sessionId=${sessionId}`, {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            mode: 'cors'
-          });
-          
-          if (response.ok) {
-            // Clear display
-            document.getElementById('out').innerHTML = '';
-            addMessageToDisplay('assistant', 'Conversation cleared! How can I help you today?');
-          } else {
-            addMessageToDisplay('assistant', 'Error clearing conversation. Please try again.');
-          }
-        } catch (error) {
-          console.error('Error clearing conversation:', error);
-          addMessageToDisplay('assistant', 'Error clearing conversation. Please try again.');
-        }
-      }
-      
-      // Load conversation history when page loads
-      loadConversationHistory();
-    </script>
-    
+    <script src="script.js"></script>
   </body>
 </html>
