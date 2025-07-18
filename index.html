@@ -47,8 +47,12 @@
       button:hover {
         background: #4f46e5;
       }
+      #clear-button:hover {
+        background: #dc2626 !important;
+      }
       #out {
-        min-height: 120px;
+        min-height: 300px;
+        max-height: 500px;
         background: #f1f5f9;
         border-radius: 8px;
         padding: 16px;
@@ -56,40 +60,105 @@
         color: #222;
         margin-top: 10px;
         word-break: break-word;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
       }
     </style>
   </head>
   <body>
     <div id="chat-container">
-      <input type="text" id="message-input" placeholder="Type a message...">
-      <button id="send-button">Send</button>
+      <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+        <input type="text" id="message-input" placeholder="Type a message..." style="flex: 1;">
+        <button id="send-button">Send</button>
+        <button id="clear-button" onclick="clearConversation()" style="background: #ef4444; width: auto; padding: 10px 15px;">Clear</button>
+      </div>
       <div id="out"></div>
     </div>
     <script>
+      // Generate a persistent user ID (stored in localStorage)
+      let userId = localStorage.getItem('chatbot_user_id');
+      if (!userId) {
+        userId = 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('chatbot_user_id', userId);
+      }
+      
+      // Generate a persistent session ID for this chat session
+      let sessionId = localStorage.getItem('chatbot_session_id');
+      if (!sessionId) {
+        sessionId = 'session-' + Date.now();
+        localStorage.setItem('chatbot_session_id', sessionId);
+      }
+      
+      let conversationHistory = [];
+      
+      // Function to add message to conversation display
+      function addMessageToDisplay(role, message) {
+        const messageDiv = document.createElement('div');
+        messageDiv.style.marginBottom = '10px';
+        messageDiv.style.padding = '8px 12px';
+        messageDiv.style.borderRadius = '8px';
+        messageDiv.style.maxWidth = '80%';
+        messageDiv.style.wordWrap = 'break-word';
+        
+        if (role === 'user') {
+          messageDiv.style.backgroundColor = '#6366f1';
+          messageDiv.style.color = 'white';
+          messageDiv.style.marginLeft = 'auto';
+          messageDiv.style.textAlign = 'right';
+        } else {
+          messageDiv.style.backgroundColor = '#f1f5f9';
+          messageDiv.style.color = '#222';
+          messageDiv.style.border = '1px solid #d1d5db';
+        }
+        
+        messageDiv.textContent = message;
+        document.getElementById('out').appendChild(messageDiv);
+        document.getElementById('out').scrollTop = document.getElementById('out').scrollHeight;
+      }
+      
       // Define the send function for the button's onclick (for compatibility)
       async function send() {
         const message = document.getElementById('message-input').value;
         if (!message.trim()) {
-          document.getElementById('out').textContent = 'Please enter a message';
           return;
         }
         
+        // Add user message to display
+        addMessageToDisplay('user', message);
+        
+        // Clear input
+        document.getElementById('message-input').value = '';
+        
         // Show loading state
-        document.getElementById('out').textContent = 'Sending message...';
+        const loadingDiv = document.createElement('div');
+        loadingDiv.id = 'loading';
+        loadingDiv.textContent = 'AI is thinking...';
+        loadingDiv.style.color = '#666';
+        loadingDiv.style.fontStyle = 'italic';
+        document.getElementById('out').appendChild(loadingDiv);
+        document.getElementById('out').scrollTop = document.getElementById('out').scrollHeight;
         
         try {
-          // Use your actual Vercel deployment URL here
-          const apiUrl = 'https://my-gemini-chatbot-m7c501jrl-jasonlam1218s-projects.vercel.app/api/chatbot';
+          // Use relative URL since frontend and API are on the same domain
+          const apiUrl = '/api/chatbot';
           
           const response = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
               message, 
-              sessionId: 'test-session-' + Date.now() 
+              sessionId: sessionId,
+              userId: userId || 'default'
             }),
             mode: 'cors'
           });
+          
+          // Remove loading indicator
+          const loadingElement = document.getElementById('loading');
+          if (loadingElement) {
+            loadingElement.remove();
+          }
           
           if (!response.ok) {
             const errorText = await response.text();
@@ -99,21 +168,93 @@
           const data = await response.json();
           
           if (data.success) {
-            document.getElementById('out').textContent = data.response;
+            addMessageToDisplay('assistant', data.response);
           } else {
-            document.getElementById('out').textContent = 'Error: ' + (data.error || 'Unknown error');
+            addMessageToDisplay('assistant', 'Error: ' + (data.error || 'Unknown error'));
           }
         } catch (error) {
-          document.getElementById('out').textContent = 'Error: ' + error.message;
+          // Remove loading indicator
+          const loadingElement = document.getElementById('loading');
+          if (loadingElement) {
+            loadingElement.remove();
+          }
+          
+          addMessageToDisplay('assistant', 'Error: ' + error.message);
           console.error('Fetch error:', error);
         }
       }
+      
       // Add event listener for the button
       document.getElementById('send-button').addEventListener('click', send);
-      // Optionally, allow pressing Enter to send
+      
+      // Allow pressing Enter to send
       document.getElementById('message-input').addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') send();
+        if (e.key === 'Enter') {
+          send();
+        }
       });
+      
+      // Function to load conversation history
+      async function loadConversationHistory() {
+        try {
+          const response = await fetch(`/api/chatbot?sessionId=${sessionId}&userId=${userId}`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+            mode: 'cors'
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.history && data.history.length > 0) {
+              // Clear current display
+              document.getElementById('out').innerHTML = '';
+              
+              // Display conversation history
+              data.history.forEach(msg => {
+                if (msg.role === 'user') {
+                  addMessageToDisplay('user', msg.parts[0].text);
+                } else if (msg.role === 'model') {
+                  addMessageToDisplay('assistant', msg.parts[0].text);
+                }
+              });
+              
+              addMessageToDisplay('assistant', 'Welcome back! I remember our previous conversation. How can I help you today?');
+            } else {
+              addMessageToDisplay('assistant', 'Hello! I\'m your AI assistant. How can I help you today?');
+            }
+          } else {
+            addMessageToDisplay('assistant', 'Hello! I\'m your AI assistant. How can I help you today?');
+          }
+        } catch (error) {
+          console.error('Error loading history:', error);
+          addMessageToDisplay('assistant', 'Hello! I\'m your AI assistant. How can I help you today?');
+        }
+      }
+      
+      // Function to clear conversation
+      async function clearConversation() {
+        try {
+          const response = await fetch(`/api/chatbot?sessionId=${sessionId}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            mode: 'cors'
+          });
+          
+          if (response.ok) {
+            // Clear display
+            document.getElementById('out').innerHTML = '';
+            addMessageToDisplay('assistant', 'Conversation cleared! How can I help you today?');
+          } else {
+            addMessageToDisplay('assistant', 'Error clearing conversation. Please try again.');
+          }
+        } catch (error) {
+          console.error('Error clearing conversation:', error);
+          addMessageToDisplay('assistant', 'Error clearing conversation. Please try again.');
+        }
+      }
+      
+      // Load conversation history when page loads
+      loadConversationHistory();
     </script>
     
   </body>
