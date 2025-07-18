@@ -23,10 +23,8 @@ This file records the total round-trip delay (browser → Vercel → Gemini → 
 | sin1 - Singapore            | 2.24 seconds        |
 | hnd1 - Tokyo, Japan         | 5.12 seconds        |
 | bom1 - Mumbai, India        | 5.17 seconds        |
-| kix1 (Osaka, Japan?)        | 2311 ms             |
-| icn1 (Seoul, Korea?)        | 2002 ms             |
-| hnd1 (Tokyo, Japan)         | 4856 ms             |
-
-Note: hnd1 appears twice with different delays; this may be from different tests or conditions. kix1 and icn1 are not in the main table but are likely Asia regions (Osaka and Seoul, respectively).
+| kix1 (Osaka, Japan?)        | 2.31 seconds        |
+| icn1 (Seoul, Korea?)        | 2.00 seconds        |
+| hnd1 (Tokyo, Japan)         | 4.85 seconds        |
 
 
