@@ -2,7 +2,7 @@
     "functions": {
       "api/chatbot.js": {
         "maxDuration": 10,
-        "runtime": "nodejs20.x"
+        "runtime": "nodejs20.1"
       }
     },
     "regions": ["pdx1"]
