@@ -74,7 +74,8 @@
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ message: txt })
+          body: JSON.stringify({ message: txt }),
+          mode: 'cors' // no-cors is default, but we need to be explicit
         });
         const t1 = performance.now();
         const data = await res.json();
