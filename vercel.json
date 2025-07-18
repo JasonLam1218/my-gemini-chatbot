@@ -2,7 +2,7 @@
     "functions": {
       "api/chatbot.js": {
         "maxDuration": 10,
-        "runtime": "nodejs20.1"
+        "runtime": "@vercel/node@0.2.3"
       }
     },
     "regions": ["pdx1"]
