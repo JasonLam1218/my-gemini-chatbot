@@ -121,8 +121,15 @@ export default async function handler(req, res) {
     const botReply = response.text();
 
     // --- Update and Save History ---
-    history.push({ role: 'user', parts: [{ text: message }] });
-    history.push({ role: 'model', parts: [{ text: botReply }] });
+    // Avoid repeated user/model pairs: only append if different from last
+    const lastUserMsg = history.length >= 2 ? history[history.length - 2] : null;
+    const lastModelMsg = history.length >= 1 ? history[history.length - 1] : null;
+    const isUserRepeat = lastUserMsg && lastUserMsg.role === 'user' && lastUserMsg.parts[0].text === message;
+    const isModelRepeat = lastModelMsg && lastModelMsg.role === 'model' && lastModelMsg.parts[0].text === botReply;
+    if (!isUserRepeat || !isModelRepeat) {
+      history.push({ role: 'user', parts: [{ text: message }] });
+      history.push({ role: 'model', parts: [{ text: botReply }] });
+    }
     if (history.length > 50) {
       history = history.slice(-50); // Limit to last 50 messages
     }
