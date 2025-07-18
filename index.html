@@ -69,17 +69,44 @@
       // Define the send function for the button's onclick (for compatibility)
       async function send() {
         const message = document.getElementById('message-input').value;
+        if (!message.trim()) {
+          document.getElementById('out').textContent = 'Please enter a message';
+          return;
+        }
+        
+        // Show loading state
+        document.getElementById('out').textContent = 'Sending message...';
+        
         try {
-          const response = await fetch('/api/chatbot', {
+          // Use your actual Vercel deployment URL here
+          // Replace 'your-project-name' with your actual Vercel project name
+          const apiUrl = 'https://your-project-name.vercel.app/api/chatbot';
+          
+          const response = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message, sessionId: 'your-session-id' }),
+            body: JSON.stringify({ 
+              message, 
+              sessionId: 'test-session-' + Date.now() 
+            }),
             mode: 'cors'
           });
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
+          }
+          
           const data = await response.json();
-          document.getElementById('out').textContent = data.response || JSON.stringify(data);
+          
+          if (data.success) {
+            document.getElementById('out').textContent = data.response;
+          } else {
+            document.getElementById('out').textContent = 'Error: ' + (data.error || 'Unknown error');
+          }
         } catch (error) {
-          document.getElementById('out').textContent = 'Fetch error: ' + error;
+          document.getElementById('out').textContent = 'Error: ' + error.message;
+          console.error('Fetch error:', error);
         }
       }
       // Add event listener for the button
