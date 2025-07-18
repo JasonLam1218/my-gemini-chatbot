@@ -60,7 +60,7 @@ export default async function handler(req, res) {
       throw new Error('No valid response from the model');
     }
 
-    const response = await result.response;
+    const response = result.response;
     const botReply = response.text(); // This should now be safe
 
     // Append the new user message and bot reply to the history
