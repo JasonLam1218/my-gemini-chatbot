@@ -1,5 +1,6 @@
 // Import the GoogleGenerativeAI class from the @google/generative-ai package
 import { GoogleGenerativeAI } from "@google/generative-ai";
+
 // Import Vercel KV for storing chat history
 import { kv } from "@vercel/kv";
 
@@ -23,7 +24,6 @@ export default async function handler(req, res) {
   try {
     // Extract the message and sessionId from the request body
     const { message, sessionId } = req.body;
-
     // If no message or sessionId is provided, return a 400 error
     if (!message || !sessionId) {
       return res.status(400).json({ error: 'Message and sessionId are required' });
