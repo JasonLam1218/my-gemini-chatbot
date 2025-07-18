@@ -35,16 +35,16 @@ export default async function handler(req, res) {
     // Initialize the GoogleGenerativeAI instance with the API key from environment variables
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-    // Get the generative model (updated to gemini-1.5-flash for better performance; align with your original if needed)
+    // Get the generative model
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     // Retrieve existing chat history from Vercel KV (or initialize as empty array)
     let history = await kv.get(`chat:${sessionId}`) || [];
 
-    // Log the retrieved history for debugging (visible in Vercel logs)
+    // Log the retrieved history for debugging
     console.log('Retrieved history for session', sessionId, ':', history);
 
-    // Start a chat session with the retrieved history for context-aware generation
+    // Start a chat session with the retrieved history
     const chat = model.startChat({
       history: history,
       generationConfig: {
@@ -52,10 +52,16 @@ export default async function handler(req, res) {
       },
     });
 
-    // Send the new message and generate a response based on the history
+    // Send the new message and generate a response
     const result = await chat.sendMessage(message);
+
+    // Add check for valid response to prevent TypeError
+    if (!result || !result.response) {
+      throw new Error('No valid response from the model');
+    }
+
     const response = await result.response;
-    const botReply = response.text();
+    const botReply = response.text(); // This should now be safe
 
     // Append the new user message and bot reply to the history
     history.push({ role: 'user', parts: [{ text: message }] });
@@ -78,11 +84,11 @@ export default async function handler(req, res) {
       backendDelay // Backend processing delay in ms
     });
   } catch (error) {
-    // Handle any errors that occur during processing
-    console.error(error); // Log for debugging
+    // Enhanced error handling: Log details and return a user-friendly message
+    console.error('Error details:', error.message, error.stack);
     return res.status(500).json({
       success: false, // Indicate failure
-      error: 'Failed to generate response' // Error message
+      error: 'Failed to generate response: ' + error.message // Provide error details
     });
   }
 }
