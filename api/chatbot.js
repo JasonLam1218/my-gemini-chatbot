@@ -10,6 +10,15 @@
 
 import { GoogleGenerativeAI } from "@google/generative-ai"; // Gemini AI SDK
 import { kv } from "@vercel/kv"; // Vercel KV for persistent storage
+import pdfParse from 'pdf-parse';
+import formidable from 'formidable';
+import fs from 'fs';
+
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
 
 // Main API handler for all HTTP methods
 export default async function handler(req, res) {
@@ -23,6 +32,35 @@ export default async function handler(req, res) {
   // --- CORS preflight ---
   if (req.method === 'OPTIONS') {
     res.status(200).end();
+    return;
+  }
+
+  // --- PDF Upload Handler ---
+  if (req.method === 'POST' && req.headers['content-type'] && req.headers['content-type'].includes('multipart/form-data')) {
+    const form = new formidable.IncomingForm();
+    form.parse(req, async (err, fields, files) => {
+      if (err) {
+        return res.status(400).json({ success: false, error: 'Failed to parse form data' });
+      }
+      const pdfFile = files.pdf;
+      if (!pdfFile) {
+        return res.status(400).json({ success: false, error: 'No PDF file uploaded' });
+      }
+      try {
+        const dataBuffer = await fs.promises.readFile(pdfFile.filepath);
+        const pdfData = await pdfParse(dataBuffer);
+        const pdfText = pdfData.text;
+        // Generate a new past paper based on the PDF content
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const prompt = `You are an exam paper generator. Given the following past paper content, generate a new exam paper that follows a similar structure, style, and difficulty, but with new questions.\n\nPast Paper Content:\n${pdfText}\n\nNew Exam Paper:`;
+        const result = await model.generateContent(prompt);
+        const generatedPaper = result.response.text();
+        return res.status(200).json({ success: true, response: generatedPaper });
+      } catch (error) {
+        return res.status(500).json({ success: false, error: 'Failed to process PDF: ' + error.message });
+      }
+    });
     return;
   }
 

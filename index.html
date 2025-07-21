@@ -15,6 +15,11 @@ This is the frontend for a persistent-memory chatbot using Google Gemini AI and 
   </head>
   <body>
     <div id="chat-container">
+      <!-- PDF Upload UI -->
+      <div style="margin-bottom: 10px;">
+        <label for="pdf-input" style="font-weight: bold;">Import PDF Past Paper:</label>
+        <input type="file" id="pdf-input" accept="application/pdf" style="margin-left: 10px;" />
+      </div>
       <!--
         Input area: text input, send button, clear button
         - Send triggers message send

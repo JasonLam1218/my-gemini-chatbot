@@ -172,3 +172,49 @@ async function clearConversation() {
     addMessageToDisplay('assistant', 'Error clearing conversation. Please try again.');
   }
 } 
+
+// PDF upload handler
+const pdfInput = document.getElementById('pdf-input');
+if (pdfInput) {
+  pdfInput.addEventListener('change', async function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    // Show loading message
+    addMessageToDisplay('user', `Uploaded PDF: ${file.name}`);
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = 'loading-pdf';
+    loadingDiv.textContent = 'Processing PDF...';
+    loadingDiv.style.color = '#666';
+    loadingDiv.style.fontStyle = 'italic';
+    document.getElementById('out').appendChild(loadingDiv);
+    document.getElementById('out').scrollTop = document.getElementById('out').scrollHeight;
+    // Prepare FormData
+    const formData = new FormData();
+    formData.append('pdf', file);
+    formData.append('sessionId', sessionId);
+    formData.append('userId', userId || 'default');
+    try {
+      const response = await fetch('/api/chatbot', {
+        method: 'POST',
+        body: formData
+      });
+      const loadingElement = document.getElementById('loading-pdf');
+      if (loadingElement) loadingElement.remove();
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+      const data = await response.json();
+      if (data.success) {
+        addMessageToDisplay('assistant', data.response);
+      } else {
+        addMessageToDisplay('assistant', 'Error: ' + (data.error || 'Unknown error'));
+      }
+    } catch (error) {
+      const loadingElement = document.getElementById('loading-pdf');
+      if (loadingElement) loadingElement.remove();
+      addMessageToDisplay('assistant', 'Error: ' + error.message);
+      console.error('PDF upload error:', error);
+    }
+  });
+} 
