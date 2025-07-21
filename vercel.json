@@ -1,8 +1,26 @@
 {
   "functions": {
+    "api/upload-pdf.js": {
+      "maxDuration": 60
+    },
     "api/chatbot.js": {
-      "maxDuration": 10
+      "maxDuration": 30
     }
   },
-  "regions": ["hnd1"]
+  "build": {
+    "env": {
+      "NODE_OPTIONS": "--max-old-space-size=1024"
+    }
+  },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    }
+  ]
 }

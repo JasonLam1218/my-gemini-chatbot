@@ -133,6 +133,42 @@ document.addEventListener('DOMContentLoaded', function() {
   // Add clear button functionality
   document.getElementById('clear-button').addEventListener('click', clearConversation);
 
+  document.getElementById('upload-pdf-button').addEventListener('click', function() {
+    document.getElementById('pdf-upload').click();
+  });
+
+  document.getElementById('pdf-upload').addEventListener('change', async function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (file.type !== "application/pdf") {
+      alert("Please upload a valid PDF file.");
+      return;
+    }
+
+    addMessageToDisplay('assistant', 'Uploading and processing PDF...');
+
+    try {
+      const response = await fetch('/api/upload-pdf', {
+        method: 'POST',
+        headers: {
+          'x-session-id': sessionId,
+          'x-user-id': userId
+        },
+        body: file
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        addMessageToDisplay('assistant', `PDF Summary:\n\n${data.summary}`);
+      } else {
+        addMessageToDisplay('assistant', 'Error processing PDF: ' + (data.error || 'Unknown error'));
+      }
+    } catch (error) {
+      addMessageToDisplay('assistant', 'Error uploading PDF: ' + error.message);
+    }
+  });
+
   loadConversationHistory();
 });
 
