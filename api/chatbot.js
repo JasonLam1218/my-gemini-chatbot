@@ -1,24 +1,12 @@
-//
-// SUMMARY:
 // This is the backend API for a persistent-memory chatbot using Google Gemini AI and Vercel KV for storage.
 // - Handles POST (send message), GET (load history), and DELETE (clear history) requests.
 // - Stores and retrieves chat history in Vercel KV using a key based on userId and sessionId.
 // - Passes full conversation history to Gemini AI for context-aware responses.
 // - Supports CORS for cross-origin requests from the frontend.
 // - Designed for serverless deployment on Vercel.
-//
 
 import { GoogleGenerativeAI } from "@google/generative-ai"; // Gemini AI SDK
 import { kv } from "@vercel/kv"; // Vercel KV for persistent storage
-import pdfParse from 'pdf-parse-debugging-disabled';
-import formidable from 'formidable';
-import fs from 'fs';
-
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
 
 // Main API handler for all HTTP methods
 export default async function handler(req, res) {
@@ -35,41 +23,13 @@ export default async function handler(req, res) {
     return;
   }
 
-  // --- PDF Upload Handler ---
-  if (req.method === 'POST' && req.headers['content-type'] && req.headers['content-type'].includes('multipart/form-data')) {
-    const form = new formidable.IncomingForm();
-    form.parse(req, async (err, fields, files) => {
-      if (err) {
-        return res.status(400).json({ success: false, error: 'Failed to parse form data' });
-      }
-      const pdfFile = files.pdf;
-      if (!pdfFile) {
-        return res.status(400).json({ success: false, error: 'No PDF file uploaded' });
-      }
-      try {
-        const dataBuffer = await fs.promises.readFile(pdfFile.filepath);
-        const pdfData = await pdfParse(dataBuffer);
-        const pdfText = pdfData.text;
-        // Generate a new past paper based on the PDF content
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-        const prompt = `You are an exam paper generator. Given the following past paper content, generate a new exam paper that follows a similar structure, style, and difficulty, but with new questions.\n\nPast Paper Content:\n${pdfText}\n\nNew Exam Paper:`;
-        const result = await model.generateContent(prompt);
-        const generatedPaper = result.response.text();
-        return res.status(200).json({ success: true, response: generatedPaper });
-      } catch (error) {
-        return res.status(500).json({ success: false, error: 'Failed to process PDF: ' + error.message });
-      }
-    });
-    return;
-  }
-
   // --- GET: Retrieve conversation history ---
   if (req.method === 'GET') {
     const { sessionId, userId } = req.query;
     if (!sessionId) {
       return res.status(400).json({ error: 'SessionId is required' });
     }
+
     try {
       // Use the same key format as POST for consistency
       const userKey = userId ? `user:${userId}:chat:${sessionId}` : `user:default:chat:${sessionId}`;
@@ -78,6 +38,7 @@ export default async function handler(req, res) {
       if (history.length === 0) {
         history = await kv.get(simpleKey) || [];
       }
+
       return res.status(200).json({
         success: true,
         history: history,
@@ -98,6 +59,7 @@ export default async function handler(req, res) {
     if (!sessionId) {
       return res.status(400).json({ error: 'SessionId is required' });
     }
+
     try {
       // Use the same key format as POST for consistency
       const userKey = `user:default:chat:${sessionId}`;
@@ -125,11 +87,12 @@ export default async function handler(req, res) {
     if (!message || !sessionId) {
       return res.status(400).json({ error: 'Message and sessionId are required' });
     }
+
     const start = Date.now(); // For backend timing
 
     // --- Gemini AI Setup ---
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.0-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     // --- Conversation Key ---
     // Use userId+sessionId for per-user, per-session memory
@@ -155,6 +118,7 @@ export default async function handler(req, res) {
     if (!result || !result.response) {
       throw new Error('No valid response from the model');
     }
+
     const response = result.response;
     const botReply = response.text();
 
@@ -168,9 +132,11 @@ export default async function handler(req, res) {
       history.push({ role: 'user', parts: [{ text: message }] });
       history.push({ role: 'model', parts: [{ text: botReply }] });
     }
+
     if (history.length > 50) {
       history = history.slice(-50); // Limit to last 50 messages
     }
+
     try {
       await kv.set(userKey, history, { ex: 604800 }); // 7 days
     } catch (error) {

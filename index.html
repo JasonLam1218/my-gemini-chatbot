@@ -1,39 +1,21 @@
-<!--
-SUMMARY:
-This is the frontend for a persistent-memory chatbot using Google Gemini AI and Vercel KV for storage.
-- Generates and stores a unique userId and sessionId in localStorage for persistent identity and session memory.
-- Loads previous conversation history from the backend on page load and displays it as chat bubbles.
-- Sends user messages to the backend, receives AI responses, and updates the UI in real time.
-- Allows clearing the conversation, which deletes the session's memory from the backend.
-- All chat history is stored in Vercel KV and is used as context for the AI model.
--->
 <!DOCTYPE html>
-<html>
-  <head><title>Chatbot Test</title>
-    <link rel="icon" href="data:,"> <!-- Prevent favicon 404 -->
-    <link rel="stylesheet" href="./style.css">
-  </head>
-  <body>
-    <div id="chat-container">
-      <!-- PDF Upload UI -->
-      <div style="margin-bottom: 10px;">
-        <label for="pdf-input" style="font-weight: bold;">Import PDF Past Paper:</label>
-        <input type="file" id="pdf-input" accept="application/pdf" style="margin-left: 10px;" />
-      </div>
-      <!--
-        Input area: text input, send button, clear button
-        - Send triggers message send
-        - Clear deletes conversation memory
-      -->
-      <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-        <input type="text" id="message-input" placeholder="Type a message..." style="flex: 1;">
-        <button id="send-button">Send</button>
-        <button id="clear-button" onclick="clearConversation()" style="background: #ef4444; width: auto; padding: 10px 15px;">Clear</button>
-      </div>
-      <div id="out"></div>
-      <div id="ai-response"></div>
-      <div id="response-delay" style="color: gray; font-size: 0.9em;"></div>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gemini Chatbot</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="chat-container">
+    <div class="input-row">
+      <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off">
+      <button id="send-button">Send</button>
+      <button id="clear-button">Clear</button>
+      <input type="file" id="pdf-upload" accept=".pdf">
     </div>
-    <script src="./script.js"></script>
-  </body>
+    <div id="out"></div>
+  </div>
+  <script src="script.js"></script>
+</body>
 </html>

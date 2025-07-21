@@ -5,12 +5,14 @@ if (!userId) {
   userId = 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
   localStorage.setItem('chatbot_user_id', userId);
 }
+
 // Generate a persistent session ID for this chat session
 let sessionId = localStorage.getItem('chatbot_session_id');
 if (!sessionId) {
   sessionId = 'session-' + Date.now();
   localStorage.setItem('chatbot_session_id', sessionId);
 }
+
 let conversationHistory = [];
 
 // --- UI rendering ---
@@ -22,6 +24,7 @@ function addMessageToDisplay(role, message) {
   messageDiv.style.borderRadius = '8px';
   messageDiv.style.maxWidth = '80%';
   messageDiv.style.wordWrap = 'break-word';
+
   // User messages are right-aligned, purple; AI messages are left, gray
   if (role === 'user') {
     messageDiv.style.backgroundColor = '#6366f1';
@@ -33,6 +36,7 @@ function addMessageToDisplay(role, message) {
     messageDiv.style.color = '#222';
     messageDiv.style.border = '1px solid #d1d5db';
   }
+
   messageDiv.textContent = message;
   document.getElementById('out').appendChild(messageDiv);
   document.getElementById('out').scrollTop = document.getElementById('out').scrollHeight;
@@ -45,10 +49,13 @@ async function send() {
   if (!message.trim()) {
     return;
   }
+
   // Add user message to display
   addMessageToDisplay('user', message);
+
   // Clear input
   document.getElementById('message-input').value = '';
+
   // Show loading state
   const loadingDiv = document.createElement('div');
   loadingDiv.id = 'loading';
@@ -57,6 +64,7 @@ async function send() {
   loadingDiv.style.fontStyle = 'italic';
   document.getElementById('out').appendChild(loadingDiv);
   document.getElementById('out').scrollTop = document.getElementById('out').scrollHeight;
+
   try {
     // Use relative URL since frontend and API are on the same domain
     const apiUrl = '/api/chatbot';
@@ -64,26 +72,30 @@ async function send() {
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        message, 
+      body: JSON.stringify({
+        message,
         sessionId: sessionId,
         userId: userId || 'default'
       }),
       mode: 'cors'
     });
     const end = Date.now(); // Record time after receiving
+
     // Remove loading indicator
     const loadingElement = document.getElementById('loading');
     if (loadingElement) {
       loadingElement.remove();
     }
+
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
+
     const data = await response.json();
     if (data.success) {
       addMessageToDisplay('assistant', data.response);
+
       // Display round-trip delay and region
       const roundTripDelay = end - start;
       const delayDiv = document.createElement('div');
@@ -100,20 +112,27 @@ async function send() {
     if (loadingElement) {
       loadingElement.remove();
     }
+
     addMessageToDisplay('assistant', 'Error: ' + error.message);
     console.error('Fetch error:', error);
   }
 }
+
 // Add event listener for the button
 // (defer until DOMContentLoaded to ensure elements exist)
 document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('send-button').addEventListener('click', send);
+
   // Allow pressing Enter to send
   document.getElementById('message-input').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') {
       send();
     }
   });
+
+  // Add clear button functionality
+  document.getElementById('clear-button').addEventListener('click', clearConversation);
+
   loadConversationHistory();
 });
 
@@ -126,11 +145,13 @@ async function loadConversationHistory() {
       headers: { 'Content-Type': 'application/json' },
       mode: 'cors'
     });
+
     if (response.ok) {
       const data = await response.json();
       if (data.success && data.history && data.history.length > 0) {
         // Clear current display
         document.getElementById('out').innerHTML = '';
+
         // Display conversation history
         data.history.forEach(msg => {
           if (msg.role === 'user') {
@@ -139,6 +160,7 @@ async function loadConversationHistory() {
             addMessageToDisplay('assistant', msg.parts[0].text);
           }
         });
+
         addMessageToDisplay('assistant', 'Welcome back! I remember our previous conversation. How can I help you today?');
       } else {
         addMessageToDisplay('assistant', 'Hello! I\'m your AI assistant. How can I help you today?');
@@ -151,6 +173,7 @@ async function loadConversationHistory() {
     addMessageToDisplay('assistant', 'Hello! I\'m your AI assistant. How can I help you today?');
   }
 }
+
 // --- Conversation clearing ---
 // Deletes conversation memory from backend and clears UI
 async function clearConversation() {
@@ -160,6 +183,7 @@ async function clearConversation() {
       headers: { 'Content-Type': 'application/json' },
       mode: 'cors'
     });
+
     if (response.ok) {
       // Clear display
       document.getElementById('out').innerHTML = '';
@@ -171,50 +195,4 @@ async function clearConversation() {
     console.error('Error clearing conversation:', error);
     addMessageToDisplay('assistant', 'Error clearing conversation. Please try again.');
   }
-} 
-
-// PDF upload handler
-const pdfInput = document.getElementById('pdf-input');
-if (pdfInput) {
-  pdfInput.addEventListener('change', async function(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    // Show loading message
-    addMessageToDisplay('user', `Uploaded PDF: ${file.name}`);
-    const loadingDiv = document.createElement('div');
-    loadingDiv.id = 'loading-pdf';
-    loadingDiv.textContent = 'Processing PDF...';
-    loadingDiv.style.color = '#666';
-    loadingDiv.style.fontStyle = 'italic';
-    document.getElementById('out').appendChild(loadingDiv);
-    document.getElementById('out').scrollTop = document.getElementById('out').scrollHeight;
-    // Prepare FormData
-    const formData = new FormData();
-    formData.append('pdf', file);
-    formData.append('sessionId', sessionId);
-    formData.append('userId', userId || 'default');
-    try {
-      const response = await fetch('/api/chatbot', {
-        method: 'POST',
-        body: formData
-      });
-      const loadingElement = document.getElementById('loading-pdf');
-      if (loadingElement) loadingElement.remove();
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
-      }
-      const data = await response.json();
-      if (data.success) {
-        addMessageToDisplay('assistant', data.response);
-      } else {
-        addMessageToDisplay('assistant', 'Error: ' + (data.error || 'Unknown error'));
-      }
-    } catch (error) {
-      const loadingElement = document.getElementById('loading-pdf');
-      if (loadingElement) loadingElement.remove();
-      addMessageToDisplay('assistant', 'Error: ' + error.message);
-      console.error('PDF upload error:', error);
-    }
-  });
-} 
+}

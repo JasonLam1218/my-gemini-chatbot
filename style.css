@@ -1,5 +1,5 @@
 /*
-  Main styling for chatbot UI: center layout, modern look, responsive design
+Main styling for chatbot UI: center layout, modern look, responsive design
 */
 body {
   background: #f4f6fb;
@@ -10,7 +10,10 @@ body {
   justify-content: center;
   height: 100vh;
   margin: 0;
+  padding: 20px;
+  box-sizing: border-box;
 }
+
 #chat-container {
   background: #fff;
   border-radius: 16px;
@@ -21,44 +24,147 @@ body {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  height: 80vh;
+  max-height: 600px;
 }
-#msg {
+
+.input-row {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
   width: 100%;
+}
+
+#message-input {
+  flex: 0 0 200px;
   font-size: 1.2em;
   padding: 12px;
   border-radius: 8px;
   border: 1px solid #d1d5db;
-  margin-bottom: 10px;
   box-sizing: border-box;
+  outline: none;
 }
+
+#message-input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+}
+
 button {
   font-size: 1.1em;
-  padding: 10px 0;
+  padding: 12px 20px;
   border-radius: 8px;
   border: none;
-  background: #6366f1;
-  color: #fff;
   cursor: pointer;
   transition: background 0.2s;
-  width: 100%;
+  font-weight: 500;
 }
-button:hover {
+
+#send-button {
+  flex: 1;
+  background: #6366f1;
+  color: #fff;
+}
+
+#send-button:hover {
   background: #4f46e5;
 }
-#clear-button:hover {
-  background: #dc2626 !important;
+
+#clear-button {
+  flex: 0 0 80px;
+  background: #dc2626;
+  color: #fff;
 }
+
+#clear-button:hover {
+  background: #b91c1c;
+}
+
 #out {
-  min-height: 300px;
-  max-height: 500px;
+  flex: 1;
   background: #f1f5f9;
   border-radius: 8px;
   padding: 16px;
   font-size: 1.1em;
   color: #222;
-  margin-top: 10px;
   word-break: break-word;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-} 
+  border: 1px solid #e5e7eb;
+}
+
+/* Message styling */
+#out > div {
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  max-width: 80%;
+  word-wrap: break-word;
+}
+
+/* User messages (right-aligned, blue) */
+#out > div[style*="background-color: rgb(99, 102, 241)"],
+#out > div[style*="background-color:#6366f1"] {
+  background-color: #6366f1 !important;
+  color: white !important;
+  margin-left: auto !important;
+  text-align: right !important;
+}
+
+/* Assistant messages (left-aligned, gray) */
+#out > div[style*="background-color: rgb(241, 245, 249)"],
+#out > div[style*="background-color:#f1f5f9"] {
+  background-color: #f1f5f9 !important;
+  color: #222 !important;
+  border: 1px solid #d1d5db !important;
+  margin-right: auto !important;
+}
+
+/* Loading indicator styling */
+#loading {
+  color: #666 !important;
+  font-style: italic !important;
+  background-color: #f1f5f9 !important;
+  border: 1px solid #d1d5db !important;
+}
+
+/* Response delay info styling */
+#response-delay {
+  font-size: 0.8em !important;
+  color: #666 !important;
+  text-align: center !important;
+  margin: 5px 0 !important;
+  padding: 4px !important;
+  background: none !important;
+  border: none !important;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  body {
+    padding: 10px;
+  }
+  
+  #chat-container {
+    padding: 20px 16px;
+    width: 100%;
+    height: 85vh;
+  }
+  
+  .input-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  #message-input {
+    flex: none;
+    width: 100%;
+  }
+  
+  #send-button,
+  #clear-button {
+    flex: none;
+    width: 100%;
+  }
+}

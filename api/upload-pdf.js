@@ -28,11 +28,10 @@ export default async function handler(req, res) {
       const content = await page.getTextContent();
       text += content.items.map(it => it.str).join(' ') + '\n';
     }
-    text = text.trim() || 'No text found in PDF.';
 
+    text = text.trim() || 'No text found in PDF.';
     const key = `pdf:${userId}:session:${sessionId}`;
     await kv.set(key, text, { ex: 7 * 24 * 3600 }); // 7 days
-
     res.status(200).json({ success: true, message: 'PDF processed and ready for generation.' });
   } catch (e) {
     res.status(500).json({ error: e.message });
