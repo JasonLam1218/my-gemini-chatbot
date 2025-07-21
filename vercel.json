@@ -1,9 +1,10 @@
 {
-    "functions": {
-      "api/chatbot.js": {
-        "maxDuration": 10
-      }
-    },
-    "regions": ["icn1"]
-  }
+  "functions": {
+    "api/chatbot.js": {
+      "includeFiles": "node_modules/**",
+      "maxDuration": 10
+    }
+  },
+  "regions": ["icn1"]
+}
   

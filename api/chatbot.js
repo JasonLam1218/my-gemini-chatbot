@@ -10,7 +10,7 @@
 
 import { GoogleGenerativeAI } from "@google/generative-ai"; // Gemini AI SDK
 import { kv } from "@vercel/kv"; // Vercel KV for persistent storage
-import pdfParse from 'pdf-parse';
+import pdfParse from 'pdf-parse-debugging-disabled';
 import formidable from 'formidable';
 import fs from 'fs';
 
@@ -129,7 +129,7 @@ export default async function handler(req, res) {
 
     // --- Gemini AI Setup ---
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.0-flash" });
 
     // --- Conversation Key ---
     // Use userId+sessionId for per-user, per-session memory
